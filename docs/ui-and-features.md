@@ -429,3 +429,29 @@ These fields trigger schema-aware repair when missing:
 | `verified` | Quote was found (substring or ≥65% word overlap) in retrieved chunks | ✅ verified |
 | `unverified` | Quote could not be matched in any chunk | ⚠️ unverified |
 | `not_applicable` | Quote is "Not reported" — nothing to verify | ℹ️ N/A |
+
+---
+
+## 16. Cross-Row Consistency Checks
+
+After validation, `_check_cross_row_consistency()` flags potential semantic misalignment:
+
+| Check | Trigger Condition | Warning Message |
+|---|---|---|
+| Quote reuse | Same normalized quote (>30 chars) supports different predictors/biomarkers | "Same source quote supports different predictors — verify that each value is correctly attributed." |
+| Effect size reuse | Same (study, effect_size) assigned to different predictors | "Same effect size from study assigned to different predictors — possible cross-row misattribution." |
+
+These warnings appear as red error boxes in the Source Evidence expander for affected rows.
+
+---
+
+## 17. Contextual Disambiguation (System Prompt Rules 9–12)
+
+The extraction system prompt includes explicit anti-misattribution rules:
+
+| Rule | What it prevents |
+|---|---|
+| Rule 9: Separate rows per subgroup | Merging survivors/non-survivors into one row |
+| Rule 10: Correct model association | Assigning OR from model A to predictor from model B |
+| Rule 11: Table row independence | Collapsing multi-row tables into a single extraction |
+| Rule 12: Timepoint separation | Mixing 24h and 48h measurements into one effect size |

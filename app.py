@@ -848,6 +848,9 @@ def _display_source_evidence(evidence_list: list) -> None:
                     st.warning(f"Schema validation issue: {schema_err}")
                 if validation.get("warning"):
                     st.warning(validation["warning"])
+                consistency_warnings = e.get("_consistency_warnings", [])
+                for cw in consistency_warnings:
+                    st.error(f"⚠️ Consistency: {cw}")
                 explain = e.get("_confidence_explain")
                 if explain:
                     st.caption(f"💡 {explain}")
@@ -1409,46 +1412,96 @@ def _render_use_case_tab(uc: int, api_key: str, model: str) -> None:
             st.session_state[f"query_uc{uc}"] = info["example_query"]
             st.rerun()
 
-    run = st.button(
-        "🔍 Extract Evidence",
-        type="primary",
-        key=f"run_uc{uc}",
-    )
-
-    if not run:
-        return
-
-    # --- Validation ---
-    if not api_key:
-        st.error("❌ Please provide an OpenRouter API Key in the sidebar.")
-        return
-
-    effective_query = st.session_state.get(f"query_uc{uc}", query) or query
-    if not effective_query.strip():
-        st.warning("⚠️ Please enter a query.")
-        return
-
-    if get_collection_count(config.CHROMA_PERSIST_DIR) == 0:
-        st.error(
-            "❌ No documents indexed. Add PDF files to "
-            f"`{config.PDF_DIR}/` and click **Index PDFs** in the sidebar."
+    col_run, col_clear = st.columns([3, 1])
+    with col_run:
+        run = st.button(
+            "🔍 Extract Evidence",
+            type="primary",
+            key=f"run_uc{uc}",
         )
+    with col_clear:
+        clear = st.button(
+            "🗑️ Clear Results",
+            key=f"clear_uc{uc}",
+            use_container_width=True,
+        )
+
+    # Clear cached results for this UC
+    if clear:
+        st.session_state.pop(f"results_uc{uc}", None)
+        st.rerun()
+
+    # Run extraction and cache results
+    if run:
+        # --- Validation ---
+        if not api_key:
+            st.error("❌ Please provide an OpenRouter API Key in the sidebar.")
+            return
+
+        effective_query = st.session_state.get(f"query_uc{uc}", query) or query
+        if not effective_query.strip():
+            st.warning("⚠️ Please enter a query.")
+            return
+
+        if get_collection_count(config.CHROMA_PERSIST_DIR) == 0:
+            st.error(
+                "❌ No documents indexed. Add PDF files to "
+                f"`{config.PDF_DIR}/` and click **Index PDFs** in the sidebar."
+            )
+            return
+
+        # --- Pipeline ---
+        with st.spinner("Retrieving and extracting (adaptive mode)…"):
+            try:
+                validated, chunks, retry_report = _run_adaptive_pipeline(
+                    uc=uc,
+                    effective_query=effective_query,
+                    api_key=api_key,
+                    model=model,
+                )
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"LLM extraction failed: {exc}")
+                return
+
+        # Store results in session state so they persist across tab switches
+        st.session_state[f"results_uc{uc}"] = {
+            "validated": validated,
+            "chunks": chunks,
+            "retry_report": retry_report,
+            "query": effective_query,
+            "model": model,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        if validated:
+            n_verified = sum(
+                1
+                for e in validated
+                if e.get("_validation", {}).get("status") == "verified"
+            )
+            _add_query_history(
+                uc=uc,
+                query=effective_query,
+                model=model,
+                evidence_count=len(validated),
+                verified_count=n_verified,
+            )
+        st.rerun()
+
+    # --- Display cached results if they exist ---
+    cached = st.session_state.get(f"results_uc{uc}")
+    if not cached:
         return
 
-    # --- Pipeline ---
-    st.subheader("3 · Results")
+    validated = cached["validated"]
+    chunks = cached["chunks"]
+    retry_report = cached["retry_report"]
+    cached_query = cached["query"]
+    cached_model = cached["model"]
+    cached_ts = cached["timestamp"]
 
-    with st.spinner("Retrieving and extracting (adaptive mode)…"):
-        try:
-            validated, chunks, retry_report = _run_adaptive_pipeline(
-                uc=uc,
-                effective_query=effective_query,
-                api_key=api_key,
-                model=model,
-            )
-        except Exception as exc:  # noqa: BLE001
-            st.error(f"LLM extraction failed: {exc}")
-            return
+    st.subheader("3 · Results")
+    st.caption(f"Query: `{cached_query}` · Model: `{cached_model}` · Run at: {cached_ts}")
 
     if not chunks:
         st.warning("No relevant passages found for this query.")
@@ -1477,13 +1530,6 @@ def _render_use_case_tab(uc: int, api_key: str, model: str) -> None:
         f"✅ Extracted **{len(validated)}** evidence item(s) — "
         f"**{n_verified}** quote-verified."
     )
-    _add_query_history(
-        uc=uc,
-        query=effective_query,
-        model=model,
-        evidence_count=len(validated),
-        verified_count=n_verified,
-    )
 
     _render_retry_metrics(retry_report)
     _render_trust_dashboard(validated, uc)
@@ -1506,7 +1552,7 @@ def _render_use_case_tab(uc: int, api_key: str, model: str) -> None:
 
         csv_data = pd.DataFrame(flat).to_csv(index=False)
         json_data = json.dumps(validated, indent=2, ensure_ascii=False)
-        brief = _generate_submission_brief(uc, effective_query, validated, model)
+        brief = _generate_submission_brief(uc, cached_query, validated, cached_model)
 
         dl_cols = st.columns(3)
         with dl_cols[0]:
@@ -1539,10 +1585,10 @@ def _render_use_case_tab(uc: int, api_key: str, model: str) -> None:
     st.divider()
     st.caption(
         "🔗 Data provenance · "
-        f"model: `{model}` · "
+        f"model: `{cached_model}` · "
         f"indexed_docs: `{len(get_indexed_sources(config.CHROMA_PERSIST_DIR))}` · "
         f"retrieved_chunks: `{len(chunks)}` · "
-        f"generated_at: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
+        f"generated_at: `{cached_ts}`"
     )
 
 

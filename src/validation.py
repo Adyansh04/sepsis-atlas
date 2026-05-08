@@ -110,6 +110,76 @@ def validate_extraction(
 
 
 # ---------------------------------------------------------------------------
+# Cross-row consistency checks
+# ---------------------------------------------------------------------------
+
+def _check_cross_row_consistency(evidence_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Flag potential semantic misalignment across rows.
+
+    Detects:
+    - Duplicate effect sizes assigned to different predictors from same study
+    - Identical quotes used for different evidence rows (copy-paste risk)
+    """
+    if len(evidence_list) < 2:
+        return evidence_list
+
+    # Index quotes → rows that use them
+    quote_to_rows: Dict[str, List[int]] = {}
+    for idx, row in enumerate(evidence_list):
+        source = row.get("source")
+        if not isinstance(source, dict):
+            continue
+        quote = (source.get("quote", "") or "").strip().lower()
+        if quote and quote != "not reported" and len(quote) > 30:
+            norm_quote = " ".join(quote.split())
+            quote_to_rows.setdefault(norm_quote, []).append(idx)
+
+    # Index (study, effect_size) → rows
+    study_effect_to_rows: Dict[tuple, List[int]] = {}
+    for idx, row in enumerate(evidence_list):
+        study = str(row.get("study_name", "")).strip().lower()
+        effect = str(row.get("effect_size", "")).strip().lower()
+        if study and effect and effect != "not reported":
+            key = (study, effect)
+            study_effect_to_rows.setdefault(key, []).append(idx)
+
+    # Annotate warnings
+    for norm_quote, indices in quote_to_rows.items():
+        if len(indices) > 1:
+            # Check if different predictors/biomarkers share the same quote
+            predictors = set()
+            for i in indices:
+                p = evidence_list[i].get("predictor") or evidence_list[i].get("biomarker_name") or ""
+                if p and p.lower() != "not reported":
+                    predictors.add(p.lower())
+            if len(predictors) > 1:
+                for i in indices:
+                    warnings = evidence_list[i].setdefault("_consistency_warnings", [])
+                    warnings.append(
+                        "Same source quote supports different predictors — "
+                        "verify that each value is correctly attributed."
+                    )
+
+    for (study, effect), indices in study_effect_to_rows.items():
+        if len(indices) > 1:
+            predictors = set()
+            for i in indices:
+                p = evidence_list[i].get("predictor") or evidence_list[i].get("biomarker_name") or ""
+                if p and p.lower() != "not reported":
+                    predictors.add(p.lower())
+            if len(predictors) > 1:
+                for i in indices:
+                    warnings = evidence_list[i].setdefault("_consistency_warnings", [])
+                    warnings.append(
+                        f"Same effect size '{effect}' from '{study}' assigned to different "
+                        "predictors — possible cross-row misattribution."
+                    )
+
+    return evidence_list
+
+
+# ---------------------------------------------------------------------------
 # Batch validation
 # ---------------------------------------------------------------------------
 
@@ -118,4 +188,6 @@ def validate_all(
     chunks: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """Validate every item in *evidence_list* and return the annotated list."""
-    return [validate_extraction(e, chunks) for e in evidence_list]
+    validated = [validate_extraction(e, chunks) for e in evidence_list]
+    validated = _check_cross_row_consistency(validated)
+    return validated

@@ -44,7 +44,7 @@ class Config:
     CHUNK_OVERLAP: int = 500  # overlap between consecutive chunks
 
     # Retrieval
-    TOP_K_CHUNKS: int = 150   # number of chunks to retrieve per query
+    TOP_K_CHUNKS: int = 50   # number of chunks to retrieve per query
 
     # Table extraction
     TABLE_EXTRACTION_ENABLED: bool = field(

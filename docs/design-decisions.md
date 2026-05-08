@@ -143,7 +143,35 @@ This section documents important operational issues that influenced the current 
 | Conflicting study claims hidden in flat tables | reviewers miss disagreement patterns | contradiction graph output |
 | Evidence importance hard to scan | difficult prioritization | knowledge graph strongest path summary |
 
-## 6. Non-goals
+## 6. Contextual disambiguation and semantic correctness
+
+### Problem
+
+The jury explicitly states: "Understanding what a number actually refers to is extremely important." A common failure mode in LLM extraction is semantic misalignment — associating an OR/HR value with the wrong predictor, cohort, or statistical model when multiple are reported on the same page.
+
+### Implemented safeguards
+
+1. **System prompt rules 9–12** explicitly instruct the LLM to:
+   - Create separate rows when multiple cohorts/subgroups exist
+   - Never merge values from different regression models
+   - Extract each table row independently
+   - Differentiate by timepoint and outcome definition
+
+2. **Cross-row consistency checker** (`_check_cross_row_consistency` in `validation.py`) detects:
+   - Same source quote supporting different predictors (potential copy-paste)
+   - Same effect size from same study assigned to different predictors (potential misattribution)
+
+3. **Per-use-case prompt PRIORITY lines** reinforce table-structure preservation and cohort correctness specifically for UC1 and UC3.
+
+### Why this is not a perfect solution
+
+- The LLM may still occasionally mix values when excerpts are ambiguous
+- The consistency check is heuristic — it flags, not corrects
+- Manual researcher review remains the gold standard for high-stakes values
+
+This approach balances automated reliability with honest limitation reporting.
+
+## 7. Non-goals
 
 The current design intentionally does **not** try to:
 
@@ -153,7 +181,7 @@ The current design intentionally does **not** try to:
 - guarantee perfect OCR or table extraction
 - run as a multi-user backend service
 
-## 7. Extension path
+## 8. Extension path
 
 The architecture was kept modular so future contributors can add:
 

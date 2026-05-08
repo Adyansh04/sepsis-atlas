@@ -125,10 +125,13 @@ Processing:
 
 - verify whether `source.quote` appears in retrieved text
 - assign validation status
+- run cross-row consistency checks:
+  - flag when same quote supports different predictors (potential copy-paste)
+  - flag when same effect size from same study is assigned to different predictors (possible misattribution)
 
 Output:
 
-- evidence rows enriched with `_validation`
+- evidence rows enriched with `_validation` and optionally `_consistency_warnings`
 
 ### Step E — Confidence and retries
 

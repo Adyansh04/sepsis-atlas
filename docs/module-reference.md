@@ -156,7 +156,8 @@ Key public functions:
 
 - `verify_quote(...)`
 - `validate_extraction(...)`
-- `validate_all(...)`
+- `validate_all(...)` — now also runs cross-row consistency checks
+- `_check_cross_row_consistency(evidence_list)` — flags quote reuse and effect size misattribution across rows
 
 ### `src/analytics.py`
 

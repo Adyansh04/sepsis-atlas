@@ -39,7 +39,18 @@ RULES — follow them exactly:
 5. For the "source.quote" field copy the EXACT sentence(s) that support the values.
 6. For the "source.page_number" field use the page number given in the excerpt header.
 7. Always include source.section_name and source.evidence_origin from excerpt metadata tags.
-8. Return ONLY a valid JSON array (even for a single item). No explanations, no markdown fences.\
+8. Return ONLY a valid JSON array (even for a single item). No explanations, no markdown fences.
+
+CONTEXTUAL DISAMBIGUATION — critical for correctness:
+9. When an excerpt reports results for MULTIPLE cohorts, subgroups, or statistical models, \
+create SEPARATE evidence items for each. Never merge values from different subgroups into one row.
+10. Ensure each numerical value (OR, HR, AUC, CI) is associated with the CORRECT predictor, \
+population, outcome, and statistical model from the SAME analysis. Do NOT mix values across \
+different regression models or subgroup analyses reported on the same page.
+11. If a table presents multiple rows of results, extract each row as a separate evidence item \
+with its own predictor, effect size, and confidence interval. Preserve the table structure.
+12. When the same predictor is reported for different timepoints or outcome definitions, \
+create separate rows and specify the timing/outcome clearly in each.\
 """
 
 # ---------------------------------------------------------------------------
@@ -49,6 +60,9 @@ RULES — follow them exactly:
 _PROMPT_UC1 = """\
 TASK: Dynamic Extraction Mode — Counterfactual Mortality Estimation.
 HUNT FOR: baseline risk equations and predictor weights (OR/HR/AUC), plus model adjustments.
+PRIORITY: Extract numerical values from tables and results sections. Each row in a results \
+table should become a separate evidence item. Ensure every OR/HR/AUC is linked to the correct \
+predictor, cohort, and statistical model.
 
 QUERY: {query}
 
@@ -129,6 +143,9 @@ Return [] if no relevant data is found.\
 _PROMPT_UC3 = """\
 TASK: Dynamic Extraction Mode — Biomarker Selection for Risk Stratification.
 HUNT FOR: head-to-head biomarker/score comparisons with AUROC-focused ranking signals.
+PRIORITY: Extract each biomarker/score as a SEPARATE row. When a table compares multiple \
+predictors, create one row per predictor with its own AUC/OR/HR. Ensure the cohort, \
+outcome definition, and adjustment are correctly matched to each biomarker's row.
 
 QUERY: {query}
 
