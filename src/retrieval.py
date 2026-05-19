@@ -16,9 +16,7 @@ from chromadb.utils import embedding_functions
 
 COLLECTION_NAME = "sepsis_papers"
 
-# Use the lightweight all-MiniLM-L6-v2 model (~80 MB, no GPU required).
-# It is downloaded automatically on first use.
-# _EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+# Embedding model for local indexing (downloaded on first use).
 _EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
 
 

@@ -17,7 +17,7 @@ The core goals are:
 
 1. preserve traceability back to the source paper
 2. avoid unsupported hallucinated values
-3. support multiple hackathon use cases through shared infrastructure
+3. support multiple use cases through shared infrastructure
 4. remain local-first for indexing and retrieval
 5. provide enough reliability signals that users can inspect failures
 
@@ -28,7 +28,7 @@ The core goals are:
 | Streamlit UI | Fast iteration and easy demo workflow |
 | ChromaDB | Local persistence, simple setup, no separate service |
 | Pydantic schemas | Strong structured contracts for each use case |
-| OpenRouter | Unified interface for multiple models and hackathon compatibility |
+| OpenRouter | Unified interface for multiple models and provider compatibility |
 | Section-aware ingestion | Better context quality than flat raw-page indexing |
 | Quote verification | Explicit provenance check after extraction |
 
@@ -147,7 +147,7 @@ This section documents important operational issues that influenced the current 
 
 ### Problem
 
-The jury explicitly states: "Understanding what a number actually refers to is extremely important." A common failure mode in LLM extraction is semantic misalignment — associating an OR/HR value with the wrong predictor, cohort, or statistical model when multiple are reported on the same page.
+A critical requirement is understanding what a number actually refers to. A common failure mode in LLM extraction is semantic misalignment — associating an OR/HR value with the wrong predictor, cohort, or statistical model when multiple are reported on the same page.
 
 ### Implemented safeguards
 

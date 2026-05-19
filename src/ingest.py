@@ -1,15 +1,9 @@
 """
 Structure-aware PDF ingestion for scientific/medical papers.
 
-Pipeline overview:
-1) Parse PDFs with `unstructured` in layout-aware mode.
-2) Route detected tables/images through OpenRouter VLM for markdown summaries.
-3) Build section-aware parent documents.
-4) Split parent documents into child chunks for vector indexing.
-
-The return format remains backward-compatible with the rest of the app
-(`text`, `source`, `page_number`, `chunk_id`) while adding richer metadata
-(parent IDs, section names, evidence origin, etc.).
+Parses PDFs with layout-aware extraction, summarizes visuals when available,
+and produces section-aware chunks for indexing. Returns chunk dicts compatible
+with the rest of the app while adding richer metadata.
 """
 
 from __future__ import annotations

@@ -1,16 +1,8 @@
 """
-Structured-extraction module.
+Structured extraction module.
 
-Sends retrieved text chunks to an LLM via the OpenRouter API (OpenAI-
-compatible endpoint) and parses the response into validated Pydantic objects.
-
-Design principles
------------------
-* Zero-temperature: extraction is deterministic.
-* Strict system prompt: the model is forbidden from inferring missing data.
-* JSON-first: the prompt explicitly demands a JSON array; a regex fallback
-  handles models that wrap JSON in markdown fences.
-* Pydantic validation: raw dicts are validated before being returned.
+Sends retrieved chunks to an OpenRouter-compatible LLM and validates the
+response against Pydantic schemas.
 """
 
 from __future__ import annotations

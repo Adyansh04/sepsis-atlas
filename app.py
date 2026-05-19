@@ -6,7 +6,7 @@ Run with:
 
 Environment variables (see .env.example):
     OPENROUTER_API_KEY   : Your OpenRouter API key
-    DEFAULT_MODEL        : LLM model slug (default: llama-3.1-8b-instruct:free)
+    DEFAULT_MODEL        : LLM model slug (default: from .env or config.py)
     PDF_DIR              : Folder containing PDFs (default: ./pdfs)
     CHROMA_PERSIST_DIR   : ChromaDB storage path (default: ./chroma_db)
 """

@@ -7,7 +7,7 @@ These tests cover pure Python logic and do NOT require:
 - A ChromaDB instance
 
 Run with:
-    pytest tests/ -v
+    python -m pytest tests/test_pipeline.py -v
 """
 
 from __future__ import annotations
@@ -75,9 +75,6 @@ class TestChunkPages:
     def test_overlap_creates_shared_content(self):
         from src.ingest import chunk_pages
 
-        # 2000-char text, 1200-char chunks, 400-char overlap.
-        # Stride = 1200 - 400 = 800.
-        # Chunk positions: 0, 800, 1600 → at least 2, possibly 3.
         pages = self._make_pages(["X" * 2000])
         chunks = chunk_pages(pages, chunk_size=1200, overlap=400)
 

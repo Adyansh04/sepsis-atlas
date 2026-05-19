@@ -26,7 +26,7 @@ class Config:
     )
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
-    # Default LLM model (free tier on OpenRouter)
+    # Default LLM model slug
     DEFAULT_MODEL: str = field(
         default_factory=lambda: os.getenv(
             "DEFAULT_MODEL", "anthropic/claude-3.5-sonnet"
