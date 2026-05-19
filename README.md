@@ -32,6 +32,8 @@ This repository includes three short demo videos demonstrating the main use case
 - [UC3: Biomarker ranking](docs/videos/uc3.mp4)
 <video controls width="640" src="docs/videos/uc3.mp4">Your browser does not support the video tag.</video>
 
+View playable demos: https://Adyansh04.github.io/sepsis-atlas/demo.html
+
 
 ## Architecture at a glance
 
